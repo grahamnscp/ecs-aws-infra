@@ -1,0 +1,35 @@
+[all:vars]
+
+ansible_user=centos
+ansible_port=22
+ansible_become=yes
+ansible_ssh_private_key_file="~/.ssh/mysshkey"
+ansible_ssh_extra_args='-o StrictHostKeyChecking=no'
+centos_password=mycentospassword
+
+# Ansible Options
+timeout=120
+deprecation_warnings=False
+#~/.ansible.cfg:[ssh_connection]\scp_if_ssh=True
+
+# Infra host variables
+private_subnet=##PRIVATE_SUBNET_NET##.0
+name_prefix=##SUBDOMAIN##
+route53_domainname=##BASEDOMAIN##
+docker_storage_device=/dev/xvdb
+dockerhub_user=mydockerhubuser
+
+# ecs host variables (storage device names can change with instance type)
+ecs_storage_device=/dev/xvdc
+ecs_docker_storage_device=/dev/xvdb
+#ecs_storage_device=/dev/nvme1n1
+#ecs_docker_storage_device=/dev/nvme2n1
+
+# Instances
+[cdp_infra]
+infra ansible_host=##INFRA_IP##  fqdn=infra.##DOMAIN##
+
+[cdp_host]
+cdp   ansible_host=##CDP_IP##  fqdn=cdp.##DOMAIN##
+
+[ecs_nodes]

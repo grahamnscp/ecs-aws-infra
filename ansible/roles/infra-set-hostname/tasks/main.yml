@@ -1,0 +1,50 @@
+---
+
+- debug:
+   msg: "THIS HOST: {{ inventory_hostname }}: {{ ansible_host }}  infra.{{ name_prefix }}.{{ route53_domainname }}"
+
+# Note: on AWS the hostname does not survive a reboot, adding this line preserves the setting:
+
+- stat: path=/etc/cloud/cloud.cfg
+  register: cloud_cfg
+
+- name: "Modify cloud.cfg to persist hostname during reboots"
+  lineinfile:
+    dest=/etc/cloud/cloud.cfg
+    line="preserve_hostname{{ ":" }} true"
+    regexp="^preserve_hostname.*$"
+    owner=root
+    state=present
+    insertafter=EOF
+  when: cloud_cfg.stat.exists == True
+
+
+- name: "Set hostname to route53 entry"
+  shell: hostnamectl set-hostname infra.{{ name_prefix }}.{{ route53_domainname }}
+  changed_when: false
+
+#- name: "Add public hostname to local hosts file"
+#  lineinfile:
+#    dest=/etc/hosts
+#    line="{{ ansible_host }}    infra.{{ name_prefix }}.{{ route53_domainname }}"
+#    regexp="^.*{{ fqdn }}.*$"
+#    owner=root
+#    state=present
+#    insertafter=EOF
+
+# set local hosts entry
+- name: "Push set hostname script to host"
+  template:
+    src: set-localhosts-entry.sh.j2
+    dest: /root/set-localhosts-entry.sh
+    owner: root
+    group: root
+    mode: 0755
+
+- name: "Set local hosts entry"
+  shell: "/root/set-localhosts-entry.sh 2>&1 | /bin/tee -a /root/set-localhosts-entry.log"
+  args:
+    executable: /bin/sh
+    chdir: /root
+    creates: /root/set-localhosts-entry.log
+

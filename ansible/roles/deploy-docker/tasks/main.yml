@@ -1,0 +1,81 @@
+---
+
+# Setup docker storage
+- name: "Install lvm package"
+  yum:
+    name: lvm2
+    state: present
+
+- name: "Creating docker-overlay2 storage script.."
+  template:
+    src: create-docker-overlay2-lvm.j2
+    dest: /root/create-docker-overlay2-lvm.sh
+    owner: root
+    group: root
+    mode: 755
+
+- name: "Creating docker-overlay2 storage.."
+  shell: /root/create-docker-overlay2-lvm.sh 2>&1 | /bin/tee -a /root/create-docker-overlay2-lvm.log
+  args:
+    executable: /bin/sh
+    chdir: /root
+    creates: /root/create-docker-overlay2-lvm.log
+
+
+# Dependancies
+- name: "Install libselinux-python to allow file copy"
+  yum:
+    name: libselinux-python
+    state: present
+
+# Create yum repo
+- name: "Add Docker yum repo"
+  template:
+    src: docker-ce.repo.j2
+    dest: /etc/yum.repos.d/docker-ce.repo
+    owner: root
+    group: root
+
+# Add GPG key to rpm database
+- name: "Add docker GPG key to RPM database"
+  rpm_key:
+    state: present
+    key: "https://download.docker.com/linux/centos/gpg"
+
+
+# Install container-selinux package
+- name: "Install container-selinux package"
+  yum:
+    name: container-selinux
+    update_cache: yes
+    state: installed
+
+- name: "Install docker-ce package"
+  yum:
+    name: docker-ce
+    update_cache: yes
+    state: installed
+
+- name: "Ensure /etc/docker dir exists"
+  file:
+    path: /etc/docker
+    state: directory
+
+# Configure any daemon options
+- name: "Configure Docker engine for overlay2 graph storage"
+  copy:
+    src: daemon-overlay2.json
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+
+- name: "Ensure docker engine is started"
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: "Add centos user to docker group"
+  user: name=centos groups=docker append=yes
+
+

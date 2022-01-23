@@ -1,0 +1,18 @@
+---
+
+- debug:
+   msg: "THIS HOST: {{ inventory_hostname }}: {{ ansible_host }}  cdp.{{ name_prefix }}.{{ route53_domainname }}"
+
+- name: "Copy local hosts entry file"
+  shell: "cat /etc/hosts | grep cdp 2>&1 | /bin/tee -a /root/cdp-private-host-entry.txt"
+  args:
+    executable: /bin/sh
+    chdir: /root
+    creates: /root/cdp-private-host-entry.txt
+
+- name: "Copy back the cdp private ip local hosts entry use in other playbooks"
+  fetch:
+    src: /root/cdp-private-host-entry.txt
+    dest: working-files/cdp-private-host-entry.txt
+    flat: yes
+

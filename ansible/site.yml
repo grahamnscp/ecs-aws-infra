@@ -1,0 +1,35 @@
+---
+
+- hosts: cdp_infra cdp_host ecs_nodes
+  roles:
+  - check-host
+  - sshd-keepalive
+
+# Setup infra server
+- hosts: cdp_infra
+  roles:
+  - set-hostname
+  - ntp-server
+  - deploy-docker
+  - deploy-bind-docker
+  - config-resolv-conf
+
+- hosts: cdp_host
+  roles:
+  - set-hostname
+  - set-centos-pwd
+  - sshd-pwdauth
+  - config-resolv-conf
+  - ntp-infra-client
+
+- hosts: ecs_nodes
+  roles:
+  - set-hostname
+  - set-centos-pwd
+  - sshd-pwdauth
+  - config-resolv-conf
+  - ntp-infra-client
+  - ecs-set-kernel-parameters
+  - ecs-create-docker-vol
+  - ecs-create-ecs-vol
+  - ecs-node-packages
